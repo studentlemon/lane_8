@@ -1,0 +1,1946 @@
+#include <iostream>
+#include <deque>
+#include <boost/thread/thread.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/bind.hpp>
+#include <string>
+#include <sstream>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <stdlib.h>
+#include <math.h>
+#include <gflags/gflags.h>
+#include <glog/logging.h>
+#include <caffe/caffe.hpp>
+#include <opencv2/opencv.hpp>
+#include "kcftracker.hpp"
+#include "tracker.h"
+#include "lane_detection.hpp"
+#include "object_detection.hpp"
+
+#include "mesurament.hpp"
+#include "can_serial.hpp"
+#include "../include/LDW_Warning.hpp"
+#include "../include/LDW.h"
+#include "../include/LDW_Measure.hpp"
+//#include "FCW_Warning.hpp"
+#define L_PI 3.14159265358979323846
+//#define _DEBUG 1
+#define WARNING
+#define y480distance 310.0
+
+using namespace caffe;
+using namespace std;
+using namespace cv;
+
+//-----------------初始化传入可执行文件的参数,给定参数说明和默认值,详见run.sh--------------------
+DEFINE_string(model_file, "",
+    "The model file used to initialize network architecture (*.prototxt).");
+DEFINE_string(weights_file, "",
+    "The weights file used to initialize network parameter (*.caffemodel)");
+DEFINE_int32(camera_id, 0,
+    "The camera ID");
+DEFINE_string(ipm_file, "",
+    "The ipm file");
+DEFINE_string(output_video, "",
+    "The output video file");
+DEFINE_double(confidence_threshold, 0.2,
+    "Only store detections with score higher than the threshold.");
+DEFINE_int32(width, 0, "Set image width");
+DEFINE_int32(height, 0, "Set image height");
+DEFINE_int32(fps, 0, "Set capture fps");
+DEFINE_int32(DEBUG, 0, "Whether need to debug");
+DEFINE_int32(SERIAL_OPEN, 1, "Whether need to open serial port");
+DEFINE_int32(VIDEO_STORE, 0, "Whether need to store video");
+
+//-------------------------用于存储通过gflag传入的值-------------------------------
+string output_video, IPM_file;
+int camera_id, im_width, im_height, im_fps, _DEBUG, _SERIAL_OPEN, _VIDEO_STORE;
+
+//-------------------------中间信息打印至文件,用于调试-------------------------------
+ofstream location_out;
+//location_out.open("location_out.txt",std::ios::out | std::ios::app);
+ofstream location_out_new;
+//location_out_new.open("location_out_new.txt");
+ofstream save_distance("tesult.txt");
+ofstream buffer("buffer.txt");
+
+//[#] 11.2 Start____________________________________________
+// 线程锁，待用
+typedef boost::shared_mutex            WR_Mutex;
+typedef boost::unique_lock<WR_Mutex>   writeLock;
+typedef boost::shared_lock<WR_Mutex>   readLock;
+WR_Mutex lkey;
+boost::mutex io_mutex;
+
+
+std::vector<Tracking> tracking_obj_pool; //for tracking
+std::vector<SSD_Detector::Object> tracked_obj_pool;
+std::vector<SSD_Detector::Object> shared_obj_pool;  // global object pool
+// 数字越大，调试显示的信息越多, 不需调试就注释掉
+//#define TR_DEBUG_LAYER_1
+//#define TR_DEBUG_LAYER_2
+//[#] 11.2 End____________________________________________
+
+//[$] Start____________________________________________
+int filter_num=3;
+deque<double> filter_relative_v_queue(filter_num);
+
+// 平均滤波器
+double filter_average_calc(double cur_v) {
+	filter_relative_v_queue.pop_front();
+	filter_relative_v_queue.push_back(cur_v);
+	double average = 0.0;
+	double sum = 0.0;
+	for (int i=0; i <filter_num; ++i) {
+		sum += filter_relative_v_queue.at(i);
+	}
+	average = sum / filter_num;
+	return average;
+}
+//[$] End____________________________________________
+
+//[%] Start____________________________________________
+#define RESTRICTED_DETECTED
+//int restricted_num = 2;
+//int origin_restricted_num = 2;
+//[%] End____________________________________________
+
+//--------------------------------目标检测类别-----------------------------------
+string model_prototxt_file = "/home/chaowei/PycharmProjects/shikewei-all3.7/models/VGGNet/ADAS/SSD_300x300_mixture/deploy.prototxt";
+string trained_caffemodel_file = "/home/chaowei/PycharmProjects/shikewei-all3.7/models/VGGNet/ADAS/SSD_300x300_mixture/"
+        "VGG_ADAS_SSD_300x300_iter_60000.caffemodel";
+SSD_Detector detector(model_prototxt_file, trained_caffemodel_file);
+string CLASSES[] = {"__background__", "bicycle", "bus", "car", "truck",
+      "van", "motorbike", "person", "tricycle"};
+
+//-------------------------------目标BBox颜色表------------------------------------------
+cv::Scalar COLOR[13]={cv::Scalar(101,67,254),cv::Scalar(18,87,220),
+					  cv::Scalar(154,157,252),cv::Scalar(185,235,35),cv::Scalar(151,191,29),
+					  cv::Scalar(76,29,78),cv::Scalar(202,188,62),cv::Scalar(171,90,0),
+					  cv::Scalar(205,55,14),cv::Scalar(53,194,107),cv::Scalar(225,169,26),
+					  cv::Scalar(31,31,197),cv::Scalar(0,0,255)};
+
+//global variable for sharing between threads
+bool DETECT_FLAG = true;
+bool OVER = false;//视频流结束标志
+vector<cv::Point> lanes; //理想车道线识别结果（四个坐标）
+back_lines final_lanes;//车道线识别返回值
+cv::Mat img_temp;
+cv::Mat frame_global, frame, canvas, canvas_detect, road, img;
+bool NEW_DETECT = false;
+bool TRACK_FLAG = false;
+bool NEW_IMAGE = false;
+
+//Crop image region
+Rect crop_region = Rect(Point(0,0), Point(640,480));
+
+vector<int> left_distance_new;//离左车道线的距离
+vector<int> right_distance_new;//离右车道线的距离
+
+extern VEHICLESTATUS m_InputVehicleStatus;
+extern VEHICLEPROPERTY m_VehicleProperty;
+Bool m_bCrossMark;
+int m_iCrossMarkSideNum; //0:Left side; 1:right side; 
+int m_iNearestMark;
+LineFunc m_LineLf;
+LineFunc m_LineRt;
+int warning_level;
+DepartureState DprtSta;
+
+double _ANGLEl;		//add by nh
+double _ANGLEr;		//add by nh
+
+//-------------存储左右车道线的坐标位置------------
+double g_LeftLane_x0, g_LeftLane_x1;
+double g_LeftLane_y0, g_LeftLane_y1;
+double g_RightLane_x2, g_RightLane_x3;
+double g_RightLane_y2, g_RightLane_y3;
+double r_distance,l_distance;
+double r_distance1,l_distance1;
+double r_distance2,l_distance2;
+
+//-------------根据识别结果需计算的参数---------------
+Uint8 g_objectnum;//目标数量
+Uint8 g_typeofleftlane;//左车道线类型
+Uint8 g_typeofrightlane;//右车道线类型
+Uint8 g_qualityoflane;//车道线质量
+Uint8 g_iscrossinglane;//是否换道
+Int16 g_dist2leftlane;//离左车道线的距离
+Int16 g_dist2righttlane;//离右车道线的距离
+Uint16 g_dist2nextleftlane;//离左边临车道的距离
+Uint16 g_dist2nextrightlane;//离右边临车道的距离
+Int16 g_angleofvehicle2lane;//本车与本车道的夹角
+Uint16 g_curveoflane;//本车道车道线曲率
+Uint8 g_derivoflanecurv;//本车道车道线曲率导数
+
+//---------------存储五个最危险的目标信息----------------
+CCanObjectRes TargetRes[5];
+int TargetCnt=0;
+
+//若存在符合条件的最危险的目标（目前指的是当前车道的最危险目标）则为１,否则为0
+int FCW_label =0;
+int FCW_object_index = 0;
+
+vector<SSD_Detector::Object> Obj_pool_temp;
+vector<SSD_Detector::Object> track_pool_temp;
+int FCW_label_temp =0;
+int FCW_object_index_temp = 0;
+int FCW_label_temp2 =0;
+int FCW_object_index_temp2 = 0;
+
+//--------------------------CAN报文中车道线信息----------------------------------
+static unsigned char can_buffer01[10]={0x00,0x01,0x00};
+static unsigned char can_buffer02[10]={0x00,0x02,0x00};
+//-------------------------CAN报文中目标检测信息----------------------------------
+static char can_buffer10[10]={0x00,0x10,0x00};
+static char can_buffer11[10]={0x00,0x11,0x00};
+static char can_buffer12[10]={0x00,0x12,0x00};
+static char can_buffer13[10]={0x00,0x13,0x00};
+static char can_buffer14[10]={0x00,0x14,0x00};
+char * pTargetCanBuffer[5] = {can_buffer10,can_buffer11,can_buffer12,can_buffer13,can_buffer14 };
+
+//-----------------------------视频存储--------------------------------
+VideoWriter objectVideo;//车道线+目标检测
+VideoWriter roadVideo; //车道线
+VideoWriter originalVideo;//原始视频
+Size s;
+int framecount = 0;//读入的图像帧数
+//add from ipm start by nh 20171115
+typedef struct IPMInfo
+{
+    //width
+    int ipmwidth;
+    //height
+    int ipmheight;
+    //portion of image height to add to y-coordinate of
+    //vanishing point
+    float vpPortion;
+    //Left point in original image of region to make IPM for
+    float ipmLeft;
+    //Right point in original image of region to make IPM for
+    float ipmRight;
+    //Top point in original image of region to make IPM for
+    float ipmTop;
+    //Bottom point in original image of region to make IPM for
+    float ipmBottom;
+    //interpolation to use for IPM (0: bilinear, 1:nearest neighbor)
+    int ipmInterpolation;
+}IPMInfo;
+//Camera Calibration info
+typedef struct CameraInfo
+{
+    //focal length in x and y
+    Point2f focalLength;
+    //optical center coordinates in image frame (origin is (0,0) at top left)
+    Point2f opticalCenter;
+    //height of camera above ground
+    float cameraHeight;
+    //pitch angle in radians (+ve downwards)
+    float pitch;
+    //yaw angle in radians (+ve clockwise)
+    float yaw;
+    //width of images
+    float imageWidth;
+    //height of images
+    float imageHeight;
+}CameraInfo;
+
+//--------------------------相对速度计算变量----------------------------
+int relative_frame_step = 5;//使用连续5帧计算相对速度
+int relative_frame_index = 0;
+int relative_frame_has_object_index = 0;
+
+//相对速度限制
+int relative_saft_limit(int input) {
+	if (input <= 0) {
+		return 0;
+	}else {
+		return input;
+	}
+}
+
+//用于计算相对速度的时间
+vector<double> relative_ts;
+
+// 最危险目标版本只计算y值
+vector<CCanObjectRes> relative_dists;
+
+double relative_delta_time;
+//#define relative_debug
+
+
+Mat Transformimage2ground(Mat uv,CameraInfo cameraInfo)
+{
+    Mat inPoints4=(Mat_<float>(uv.rows+2,uv.cols));
+    Mat inPoints3=(Mat_<float>(3,1)<<uv.at<float>(0,0),uv.at<float>(1,0),1);
+    //cout<<inPoints3<<endl;
+    float c1 = cos(cameraInfo.pitch*PI/180);
+    float s1 = sin(cameraInfo.pitch*PI/180);
+    float c2 = cos(cameraInfo.yaw*PI/180);
+    float s2 = sin(cameraInfo.yaw*PI/180);
+    Mat matp=(Mat_<float>(4,3)<<
+                              -cameraInfo.cameraHeight*c2/cameraInfo.focalLength.x, cameraInfo.cameraHeight*s1*s2/cameraInfo.focalLength.y,  (cameraInfo.cameraHeight*c2*cameraInfo.opticalCenter.x/cameraInfo.focalLength.x)-(cameraInfo.cameraHeight *s1*s2* cameraInfo.opticalCenter.y/cameraInfo.focalLength.y) - cameraInfo.cameraHeight *c1*s2,
+            cameraInfo.cameraHeight*s2 /cameraInfo.focalLength.x,  cameraInfo.cameraHeight *s1*c2 /cameraInfo.focalLength.y,
+            (-cameraInfo.cameraHeight *s2* cameraInfo.opticalCenter.x/cameraInfo.focalLength.x)-(cameraInfo.cameraHeight *s1*c2*cameraInfo.opticalCenter.y /cameraInfo.focalLength.y) -cameraInfo.cameraHeight *c1*c2,0,
+            cameraInfo.cameraHeight *c1 /cameraInfo.focalLength.y,(-cameraInfo.cameraHeight *c1* cameraInfo.opticalCenter.y /cameraInfo.focalLength.y) + cameraInfo.cameraHeight *s1,0,
+            -c1 /cameraInfo.focalLength.y,(c1* cameraInfo.opticalCenter.y /cameraInfo.focalLength.y) - s1);
+    inPoints4=matp*inPoints3;
+    //cout<<inPoints4<<endl;
+    float div=inPoints4.at<float>(3,0);
+    //cout<<"div:"<<div<<endl;
+    Mat inpoint4_row1 = Mat_<float>(1,1)<<inPoints4.at<float>(0,0)/div;
+    //cout<<inpoint4_row1<<endl;
+    Mat inpoint4_row2 = Mat_<float>(1,1)<<inPoints4.at<float>(1,0)/div;
+
+    Mat xy =(Mat_<float>(2,1));
+    vconcat(inpoint4_row1,inpoint4_row2,xy);
+    return xy;
+}
+
+void clear_targetbuf()
+{
+    for(int i=0;i<5;i++)
+    {
+        TargetRes[i].TargetHDist=0;
+        TargetRes[i].TargetRelSpeed=0;
+        TargetRes[i].TargetVDist=0;
+        TargetRes[i].Time2Crash=0;
+        TargetRes[i].TypeofTarget=0;
+    }
+}
+
+
+//=====================================目标检测框绘制===========================================
+void draw_bb_top(cv::Mat &img_, string &name, cv::Point &pt_lt,
+                                  cv::Point &pt_br, cv::Scalar &color, cv::Point2d &dist_, string &pos)
+{
+	cv::rectangle(img_,cv::Point(pt_lt.x,pt_lt.y-15),pt_br,color,2);
+	cv::rectangle(img_,cv::Point(pt_lt.x,pt_lt.y-15),
+                    cv::Point(pt_lt.x + name.length()*15,pt_lt.y),color,-1);
+	cv::putText(img_,name,cv::Point(pt_lt.x+7,pt_lt.y-4), cv::FONT_HERSHEY_SIMPLEX,
+							0.6,cv::Scalar(255,255,255),1,8);//lt means lefttop
+	
+	save_distance<<"type:"<<name<<";";
+	
+	//dist_.y=dist_.y-1.7;//1.7means the distance from camera to the front of car;
+	if (dist_.y > 0){
+		ostringstream s_temp;
+		s_temp << dist_;
+		cv::putText(img_, s_temp.str(),cv::Point(pt_lt.x+name.length()*8+10,pt_lt.y-4), cv::FONT_HERSHEY_SIMPLEX,
+								0.5,cv::Scalar(0,0,0),1,8);
+		cv::putText(img_, pos,cv::Point(pt_lt.x+7,pt_lt.y+10), cv::FONT_HERSHEY_SIMPLEX,
+						0.5,cv::Scalar(0,0,0),1,8);
+	}
+	
+}
+
+//add by zhangsijia 10.31 start
+//--------------------------最危险目标用红色框表示----------------------------
+void draw_bbnear_top(cv::Mat &img_, string &name, cv::Point &pt_lt,
+                                  cv::Point &pt_br, cv::Scalar &color, cv::Point2d &dist_, string &pos){
+	cv::rectangle(img_,cv::Point(pt_lt.x,pt_lt.y-15),pt_br,cv::Scalar(0,0,255),2);
+	cv::rectangle(img_,cv::Point(pt_lt.x,pt_lt.y-15),
+                    cv::Point(pt_lt.x + name.length()*15,pt_lt.y),cv::Scalar(0,0,255),-1);
+	cv::putText(img_,name,cv::Point(pt_lt.x+7,pt_lt.y-4), cv::FONT_HERSHEY_SIMPLEX,
+							0.6,cv::Scalar(255,255,255),1,8);//lt means lefttop
+	
+	//dist_.y=dist_.y-1.7;//1.7means the distance from camera to the front of car;
+	if (dist_.y > 0){
+		ostringstream s_temp;//set up a stream
+		s_temp << dist_;//pass in the value to the stream
+		cv::putText(img_, s_temp.str(),cv::Point(pt_lt.x+name.length()*8+10,pt_lt.y-4), cv::FONT_HERSHEY_SIMPLEX,
+								0.5,cv::Scalar(0,0,255),1,8);
+		cv::putText(img_, pos,cv::Point(pt_lt.x+7,pt_lt.y+10), cv::FONT_HERSHEY_SIMPLEX,
+						0.5,cv::Scalar(0,0,255),1,8);
+	}
+	
+}
+//add by zhangsijia 10.31 end
+
+//===============================判断前方目标与当前车道的相对位置=====================================
+// if point is in the left of line, return 1, otherwise, return 0
+int justify_position(cv::Point2f &start, cv::Point2f &end, cv::Point2f &traj)
+{
+	float value = (traj.x-start.x)/(end.x-start.x)-(traj.y-start.y)/(end.y-start.y);
+	if(start.x >= end.x)
+	{
+	  	return value<0 ? 1:0;
+	}
+  	else
+	{
+    	return value>0 ? 1:0;
+  	}
+}
+
+
+//=================================检测的目标按纵向距离排序========================================
+bool comp(SSD_Detector::Object& a,SSD_Detector::Object& b)
+{
+	if(a.dist.y<b.dist.y)
+	{
+		return true;
+	}
+    return false;
+}
+
+//===============================判别目标的位置,并绘制boundingbox==================================
+void CIPV_Judge(vector<SSD_Detector::Object>& obj_pool)
+{
+    //横向距离判别，若横向距离超过一定阈值或纵向距离为异常值，排除该目标
+    size_t objectnum=0;
+    size_t num=0;
+    FCW_label = 0;
+	for (size_t select = 0; select < obj_pool.size(); select++)
+	{
+		//筛选出横向距离小于4m,纵向距离大于1.7m的目标,其中1.7m表示摄像头距车头的距离
+		//if((obj_pool[select].dist.x<4)&&(obj_pool[select].dist.y)>1.7)
+		//不同的CIPV策略，只对纵向距离进行限制
+		if((obj_pool[select].dist.y)>1.7)
+		{
+			obj_pool[num]=obj_pool[select];
+			num++;
+		}
+	}
+
+    //--------------当目标大于1个时，按照纵向距离进行排序-------------
+	if(num>1)
+	{	
+	    sort(obj_pool.begin(),obj_pool.begin()+int(num),comp);
+
+		if(num<=5) 
+		{			
+			objectnum=num;
+		}
+		else 
+		{
+			objectnum=5;
+		}
+	}
+	else if(num==1) 
+	{
+		objectnum=1;
+	}	
+	else if(num==0)
+	{
+		objectnum=0;
+		TargetRes[0].TypeofTarget = 0;
+		TargetRes[0].TargetVDist = 0;
+		TargetRes[0].TargetHDist = 0;
+	}
+
+	int countnumber=0;
+	for(size_t i=0;i<objectnum;i++)
+	{
+		cv::Point lt = obj_pool[i].boundingbox.tl();//检测的bbox左上角坐标
+		int middle_x = lt.x+obj_pool[i].boundingbox.width/2;
+		cv::Point rb = Point(lt.x+obj_pool[i].boundingbox.width, lt.y+obj_pool[i].boundingbox.height);//bbox右下角坐标
+		obj_pool[i].dist.y=obj_pool[i].dist.y-1.7;//除去自车车头的长度
+		if( middle_x<320 )
+			obj_pool[i].dist.x=-obj_pool[i].dist.x;
+        //----------------------------------------------限定危险距离---------------------------------------------------
+		//if((obj_pool[i].dist.y<=20) && (obj_pool[i].dist.y>0)&&(obj_pool[i].dist.x<=1.5)&&(obj_pool[i].dist.x>=-1.5))
+		//---------------------------------------------只判断正前方的危险目标---------------------------------------------------
+	  	if((obj_pool[i].position=="front")&&(countnumber==0))
+		{
+            FCW_label = 1;
+            FCW_object_index = i;
+			countnumber++;
+		}
+	}
+
+}
+
+void CIPV_Judge_for_drawing(vector<SSD_Detector::Object>& obj_pool,cv::Mat& frame_)
+{
+    //横向距离判别，若横向距离超过一定阈值或纵向距离为异常值，排除该目标
+    size_t num=0;
+    TargetCnt = 0;
+    //FCW_label = 0;
+    for (size_t select = 0; select < obj_pool.size(); select++)
+    {
+        if((obj_pool[select].dist.y)>1.7)
+        {
+            obj_pool[num]=obj_pool[select];
+            num++;
+        }
+
+    }
+    buffer<<"num:"<<num<<endl;
+
+    //--------------当目标大于1个时，按照纵向距离进行排序-------------
+    if(num>1)
+    {
+        sort(obj_pool.begin(),obj_pool.begin()+int(num),comp);
+
+        if(num<=5)
+        {
+            g_objectnum=num;
+        }
+        else
+        {
+            g_objectnum=5;
+        }
+    }
+    else if(num==1)
+    {
+        g_objectnum=1;
+    }
+    else if(num==0)
+    {
+        g_objectnum=0;
+        TargetRes[0].TypeofTarget = 0;
+        TargetRes[0].TargetVDist = 0;
+        TargetRes[0].TargetHDist = 0;
+    }
+
+    int countnumber=0;
+    TargetCnt=1;
+    for(size_t i=0;i<g_objectnum;i++)
+    {
+        cv::Point lt = obj_pool[i].boundingbox.tl();//检测的bbox左上角坐标
+        int middle_x = lt.x+obj_pool[i].boundingbox.width/2;
+        cv::Point rb = Point(lt.x+obj_pool[i].boundingbox.width, lt.y+obj_pool[i].boundingbox.height);//bbox右下角坐标
+        obj_pool[i].dist.y=obj_pool[i].dist.y-1.7;//除去自车车头的长度
+        if( middle_x<320 )
+            obj_pool[i].dist.x=-obj_pool[i].dist.x;
+        //----------------------------------------------限定危险距离---------------------------------------------------
+        //if((obj_pool[i].dist.y<=20) && (obj_pool[i].dist.y>0)&&(obj_pool[i].dist.x<=1.5)&&(obj_pool[i].dist.x>=-1.5))
+        //---------------------------------------------只判断正前方的危险目标---------------------------------------------------
+        if((obj_pool[i].position=="front")&&(countnumber==0))
+        {
+            //-------------------------------------近距离危险目标使用红色框标出--------------------------------------------
+            draw_bbnear_top(frame_, CLASSES[obj_pool[i].label], lt, rb, COLOR[12], obj_pool[i].dist, obj_pool[i].position);
+            //在画面上显示最危险目标的横纵向距离
+            //ostringstream s_temp;
+            //s_temp << obj_pool[i].dist;
+            //cv::putText(frame_, s_temp.str(),cv::Point(30,80), cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255),1,8);
+            TargetRes[0].TypeofTarget = obj_pool[i].label;
+            TargetRes[0].TargetVDist = (int)(obj_pool[i].dist.y * 100);
+            TargetRes[0].TargetHDist = (int)(obj_pool[i].dist.x * 100);
+            countnumber++;
+        }
+        else
+        {
+            //-------------------------------------------非危险目标------------------------------------------------------
+            draw_bb_top(frame_, CLASSES[obj_pool[i].label], lt, rb, COLOR[obj_pool[i].label], obj_pool[i].dist, obj_pool[i].position);
+            //countnumber++;
+            if(TargetCnt<5)
+            {
+                TargetRes[TargetCnt].TypeofTarget = obj_pool[i].label;
+                TargetRes[TargetCnt].TargetVDist = (int)(obj_pool[i].dist.y * 100);
+                TargetRes[TargetCnt].TargetHDist = (int)(obj_pool[i].dist.x * 100);
+                TargetCnt++;
+            }
+        }
+        buffer<<"obj_pool[num].dist.y:"<<obj_pool[i].dist.y<<endl;
+        buffer<<"obj_pool[num].dist.x:"<<obj_pool[i].dist.x<<endl;
+    }
+    //若所有目标都距离较远,则选取最近的目标为危险目标
+    /*if((countnumber==g_objectnum)&&(countnumber>0))
+    {
+        cv::Point lt = obj_pool[0].boundingbox.tl();
+        cv::Point rb = Point(lt.x+obj_pool[0].boundingbox.width, lt.y+obj_pool[0].boundingbox.height);
+        draw_bb_top(frame_, CLASSES[obj_pool[0].label], lt, rb, COLOR[12], obj_pool[0].dist, obj_pool[0].position);
+        ostringstream s_temp;
+        s_temp << obj_pool[0].dist;
+        cv::putText(frame_, s_temp.str(),cv::Point(30,100), cv::FONT_HERSHEY_SIMPLEX,
+                            0.5,cv::Scalar(0,0,255),1,8);
+        for(size_t number=0;number<countnumber;number++)
+        {
+            TargetCnt=0;
+            TargetRes[TargetCnt].TypeofTarget = obj_pool[number].label;
+              TargetRes[TargetCnt].TargetVDist = (int)(obj_pool[number].dist.y * 100);
+            TargetRes[TargetCnt].TargetHDist = (int)(obj_pool[number].dist.x * 100);
+            TargetCnt++;
+        }
+
+    }*/
+}
+
+//add by zhangsijia 10.31 end
+
+//===============================根据识别出车道线的类别绘制车道线===================================
+void draw_detected_lane(Mat &frame_, back_lines &final_lanes, const int frameCount)
+{
+	Point2f tmpline1;
+	Point2f tmpline2;
+	Scalar leftlanecolor = Scalar(0, 100, 0);
+	Scalar rightlanecolor = Scalar(0, 100, 0);
+
+
+    if (frameCount > 1)
+    {
+        //---------------------------------绘制左车道线----------------------------------------
+		if (final_lanes.left_solid_line == 0) //绘制实线
+		{
+			for (int i = 1; i < final_lanes.left_lines.size(); ++i) 
+			{
+
+				line(frame_, final_lanes.left_lines[i - 1] + Point2f(MY_boundingBox.tl()),
+				      final_lanes.left_lines[i] + Point2f(MY_boundingBox.tl()), Scalar(0, 255, 0), 2, CV_AA);
+			}
+		}
+		else if (final_lanes.left_solid_line == 1) //绘制虚线
+		{
+			for (int i = final_lanes.left_lines.size() - 1; i >= 30; i = i - 50) 
+			{
+
+				 line(frame_, final_lanes.left_lines[i] + Point2f(MY_boundingBox.tl()), 
+				        final_lanes.left_lines[i - 30] + Point2f(MY_boundingBox.tl()), Scalar(0, 255, 0), 2, CV_AA);
+			}
+		}
+		else if (final_lanes.left_solid_line == 2) //未识别
+		{
+			//PASS
+		}
+
+        //--------------------------------绘制右车道线--------------------------------------
+		if (final_lanes.right_soild_line == 0) 
+		{
+			for (int i = 1; i < final_lanes.right_lines.size(); ++i) 
+			{
+
+				 line(frame_, final_lanes.right_lines[i - 1] + Point2f(MY_boundingBox.tl()),
+				      final_lanes.right_lines[i] + Point2f(MY_boundingBox.tl()), Scalar(0, 255, 0), 2, CV_AA);
+			}
+		}
+		else if (final_lanes.right_soild_line == 1) 
+		{
+			for (int i = final_lanes.right_lines.size() - 1; i >= 30; i = i - 50) 
+			{
+
+
+				 line(frame_, final_lanes.right_lines[i] + Point2f(MY_boundingBox.tl()),
+				      final_lanes.right_lines[i - 30] + Point2f(MY_boundingBox.tl()), Scalar(0, 255, 0), 2, CV_AA);
+			}
+		}
+		else if (final_lanes.right_soild_line == 2) 
+		{
+			//PASS
+		}
+
+        //----------------------------一边实线一边虚线---------------------------------
+		if ((final_lanes.left_solid_line == 0 || final_lanes.left_solid_line == 1) &&
+			(final_lanes.right_soild_line == 0 || final_lanes.right_soild_line == 1))
+        {
+//--------若未定义临车道识别------------
+#ifndef SECOND_LINE_ANTI_VANISH
+            if (final_lanes.left_second_valid == true)
+            {
+                line(frame_, final_lanes.second_lines[0] + Point2f(MY_boundingBox.tl()),
+                     final_lanes.second_lines[1] + Point2f(MY_boundingBox.tl()), Scalar(200, 200, 200), 0.5, CV_AA);
+            }
+
+            if (final_lanes.right_second_valid == true)
+            {
+                line(frame_, final_lanes.second_lines[2] + Point2f(MY_boundingBox.tl()),
+                     final_lanes.second_lines[3] + Point2f(MY_boundingBox.tl()), Scalar(0, 0, 200), 0.5, CV_AA);
+            }//presumably adjacent lane line
+#elif defined(SECOND_LINE_ANTI_VANISH)
+            if (final_lanes.left_second_valid == true) {
+                line(frame_, final_lanes.second_lines[0] + Point2f(MY_boundingBox.tl()),
+                     final_lanes.second_lines[1] + Point2f(MY_boundingBox.tl()), Scalar(0, 0, 200), 0.5, CV_AA);
+//				cout << "[Cond1]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            } else if (final_lanes.left_second_valid ==false \
+                and 0 <= second_line_vanish_counter
+                and second_line_vanish_counter <= second_line_vanish_threshold) {
+                second_line_vanish_counter += 1;
+                line(frame_, final_lanes.second_lines[0] + Point2f(MY_boundingBox.tl()),
+                     final_lanes.second_lines[1] + Point2f(MY_boundingBox.tl()), Scalar(0, 0, 200), 0.5, CV_AA);
+//				cout << "[Cond2]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            } else if (final_lanes.left_second_valid ==false \
+                and second_line_vanish_counter > second_line_vanish_threshold){
+                second_line_vanish_counter = 0;
+//				cout << "[Cond3]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            } else {
+//				cout << "[Cond4]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            }
+
+            if (final_lanes.right_second_valid == true) {
+                line(frame_, final_lanes.second_lines[2] + Point2f(MY_boundingBox.tl()),
+                     final_lanes.second_lines[3] + Point2f(MY_boundingBox.tl()), Scalar(0, 0, 200), 0.5, CV_AA);
+//				cout << "[Cond1]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            } else if (final_lanes.left_second_valid ==false \
+                and 0 <= second_line_vanish_counter
+                       and second_line_vanish_counter <= second_line_vanish_threshold) {
+                second_line_vanish_counter += 1;
+                line(frame_, final_lanes.second_lines[2] + Point2f(MY_boundingBox.tl()),
+                     final_lanes.second_lines[3] + Point2f(MY_boundingBox.tl()), Scalar(0, 0, 200), 0.5, CV_AA);
+//				cout << "[Cond2]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            } else if (final_lanes.left_second_valid ==false \
+                and second_line_vanish_counter > second_line_vanish_threshold){
+                second_line_vanish_counter = 0;
+//				cout << "[Cond3]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            } else {
+//				cout << "[Cond4]———————————————>" << second_line_vanish_counter << "<———————————————\n";
+            }
+#endif
+        }
+            //车道中心预瞄点绘制
+			/*Point2f centerline1,centerline2;
+			centerline1.x = (final_lanes.center_lines[0].x + final_lanes.center_lines[2].x) / 2 + (MY_boundingBox.x);
+			centerline1.y = (final_lanes.center_lines[0].y + final_lanes.center_lines[2].y) / 2 + (MY_boundingBox.y);
+			centerline2.x = (final_lanes.center_lines[1].x + final_lanes.center_lines[3].x) / 2 + (MY_boundingBox.x);
+			centerline2.y = (final_lanes.center_lines[1].y + final_lanes.center_lines[3].y) / 2 + (MY_boundingBox.y);
+			circle(frame_, 0.7*centerline1 + 0.3* centerline2, 5, cv::Scalar(0, 255, 0), 1);*/
+            g_LeftLane_x0 = final_lanes.center_lines[0].x + MY_boundingBox.x;
+            g_LeftLane_y0 = final_lanes.center_lines[0].y  + MY_boundingBox.y;
+            g_LeftLane_x1 = final_lanes.center_lines[1].x + MY_boundingBox.x;
+            g_LeftLane_y1 = final_lanes.center_lines[1].y  + MY_boundingBox.y;
+            g_RightLane_x2 = final_lanes.center_lines[2].x + MY_boundingBox.x;
+            g_RightLane_y2 = final_lanes.center_lines[2].y  + MY_boundingBox.y;
+            g_RightLane_x3 = final_lanes.center_lines[3].x + MY_boundingBox.x;
+            g_RightLane_y3 = final_lanes.center_lines[3].y  + MY_boundingBox.y;
+
+    }
+
+}
+
+//================================车辆离车道线的距离,跨线标志计算====================================
+void lane_distance_compute()
+{
+    //add from ipm start by nh 20171115
+    CameraInfo cameraInfo;
+    IPMInfo IPMinfo;
+    cameraInfo.focalLength.x=908.0975;
+    cameraInfo.focalLength.y=910.1874;
+    cameraInfo.opticalCenter.x=349.2722;
+    cameraInfo.opticalCenter.y=241.6095;
+    cameraInfo.cameraHeight=1500;
+    cameraInfo.pitch=5.74571;
+    cameraInfo.yaw=0.303;
+    cameraInfo.imageWidth=640;
+    cameraInfo.imageHeight=480;
+
+    IPMinfo.ipmwidth=640;
+    IPMinfo.ipmheight=480;
+    IPMinfo.ipmLeft=0;
+    IPMinfo.ipmRight=640;
+    IPMinfo.ipmTop=0;
+    IPMinfo.ipmBottom=480;
+
+    /* 	control value */
+    unsigned char isGetLanes = 0x01;//是否检测到车道线标志,0-No,1-Yes
+    CCanLaneRes LaneRes;
+
+    int visionPreview_dist;
+    int visionAngle_angle;
+
+    //add by nh to calculate the real distance
+    double k_left, k_right;	//定义图像坐标系下左右两条车道线的斜率
+    double b_left, b_right;	//定义图像坐标系下左右两条车道线直线方程的b值
+    double g_ThetaLeft, g_ThetaRight;	//定义图像坐标系下左右两条车道线与x轴正方向所成的夹角
+    //求出两条识别出来的车道线的直线方程
+    k_left = (double)(g_LeftLane_y0 - g_LeftLane_y1)/(g_LeftLane_x0 - g_LeftLane_x1);
+    k_right = (double)(g_RightLane_y2 - g_RightLane_y3)/(g_RightLane_x2 - g_RightLane_x3);
+    b_left = g_LeftLane_y0 - k_left * g_LeftLane_x0;
+    b_right = g_RightLane_y2 - k_right * g_RightLane_x2;
+    //利用图像最下端y=480的像素坐标带入两条直线方程得到左右两条直线上的这个y坐标下的横坐标
+    float x_left, x_right;
+    float y_img = 480.0;
+    x_left = (y_img - b_left) / k_left;
+    x_right = (y_img - b_right) / k_right;
+    float u_left, v_left;
+    float u_right, v_right;
+    u_left = x_left;
+    v_left = y_img;
+    u_right = x_right;
+    v_right = y_img;
+    Mat uv_left = (Mat_<float>(2,1)<<u_left, v_left);
+    Mat uv_right = (Mat_<float>(2,1)<<u_right, v_right);
+    //Mat uv=(Mat_<float>(2,1)<<u1,v1);
+    //cout<<uv<<endl;
+    Mat xy_left =(Mat_<float>(2,1));
+    Mat xy_right =(Mat_<float>(2,1));
+    xy_left = Transformimage2ground(uv_left,cameraInfo);
+    xy_right = Transformimage2ground(uv_right,cameraInfo);
+
+    double l_realDist, r_realDist;
+    double angle_l, angle_r;
+    angle_l = _ANGLEl*PI/180;
+    angle_r = _ANGLEr*PI/180;
+    double angle;
+    angle = (angle_l + angle_r) / 2;
+    double lDist_calculation, rDist_calculation;
+    if (angle <=0)
+    {
+        lDist_calculation = xy_left.at<float>(0,0)/10 + y480distance*sin(angle);
+        rDist_calculation = xy_right.at<float>(0,0)/10 + y480distance*sin(angle);
+    }
+    else
+    {
+        lDist_calculation = xy_left.at<float>(0,0)/10 - y480distance*sin(angle);
+        rDist_calculation = xy_right.at<float>(0,0)/10 - y480distance*sin(angle);
+    }
+    l_realDist = abs(lDist_calculation);
+    r_realDist = abs(rDist_calculation);
+    LaneRes.ObjectNum = g_objectnum;  //先固定障碍物为5个
+    LaneRes.QualityOfLane = 2; //固定车道线质量
+    LaneRes.CurvOfLane =(int)final_lanes.first_pramater_left;    //曲率
+    LaneRes.DerivOfLaneCurv = (int)(2*final_lanes.first_pramater_left); //曲率的导数
+    /* compute and transmit control value */
+    if (framecount > 1)
+    {
+        //判断车道线类型
+        LaneRes.TypeofRightLane = 0;
+        LaneRes.TypeofLeftLane = 0;
+        LaneRes.QualityOfLane = 0;
+        if ((final_lanes.left_solid_line == 0 || final_lanes.left_solid_line == 1)&& (final_lanes.right_soild_line == 0 || final_lanes.right_soild_line == 1))
+        {
+            if (final_lanes.left_solid_line == 0 )
+            {
+                LaneRes.TypeofLeftLane=0x02;  //output soild left lane flag
+                LaneRes.QualityOfLane = 2;
+            }
+            else if (final_lanes.left_solid_line == 1 )
+            {
+                LaneRes.TypeofLeftLane =0x01;  //output dash left lane flag
+                LaneRes.QualityOfLane = 2;
+            }
+
+            if (final_lanes.right_soild_line == 0)
+            {
+                LaneRes.TypeofRightLane =0x02;  //output soild right lane flag
+                LaneRes.QualityOfLane = 2;
+            }
+            else if (final_lanes.right_soild_line == 1)
+            {
+                LaneRes.TypeofRightLane =0x01;  //output dash right lane flag
+                LaneRes.QualityOfLane = 2;
+            }
+        }
+        else
+        {
+            //无法检测到车道线
+            isGetLanes = 0x00;
+            LaneRes.TypeofRightLane = 0;
+            LaneRes.TypeofLeftLane = 0;
+            LaneRes.QualityOfLane = 0;
+
+        }
+        //输出车道线距离及跨越车道线标识判断-start add by nh 20171115
+        double temp_dist2leftlane;
+        double temp_dist2rightlane;
+        double temp_dist2leftlanecal;
+        double temp_dist2rightlanecal;
+        if ((LaneRes.TypeofRightLane != 0) && (LaneRes.TypeofLeftLane != 0))
+        {
+            LaneRes.IsCrossingLane = 0;
+            LaneRes.Dist2RightLane = (int)abs(r_realDist);
+            LaneRes.Dist2LeftLane = (int)abs(l_realDist);  //Camera到左侧车道线的距离
+            //解决当左右车道线距离突变情况下的跨线信息输出-start
+            if (temp_dist2rightlane<=100 && LaneRes.Dist2RightLane>=220)
+            {
+                LaneRes.IsCrossingLane = 1;		//向右压线-1
+                LaneRes.Dist2RightLane = temp_dist2rightlane;		//output the last value
+                temp_dist2rightlanecal = rDist_calculation;
+            }
+
+            else if ((temp_dist2rightlanecal<=100 && rDist_calculation>=220)||(rDist_calculation < 0))
+            {
+                LaneRes.IsCrossingLane = 1;		//向右压线-1
+                LaneRes.Dist2RightLane = temp_dist2rightlane;		//output the last value
+                temp_dist2rightlanecal = rDist_calculation;
+            }
+            if (temp_dist2leftlane<=100 && LaneRes.Dist2LeftLane>=220)
+            {
+                LaneRes.IsCrossingLane = 2;		//向左压线-2
+                LaneRes.Dist2LeftLane = temp_dist2leftlane;		//output the last value
+                temp_dist2leftlanecal = lDist_calculation;
+            }
+            else if ((temp_dist2leftlanecal>=-100 && lDist_calculation<=-220)||(lDist_calculation >= 0))
+            {
+                LaneRes.IsCrossingLane = 2;		//向左压线-2
+                LaneRes.Dist2LeftLane = temp_dist2leftlane;		//output the last value
+                temp_dist2leftlanecal = lDist_calculation;
+            }
+            //解决当左右车道线距离突变情况下的跨线信息输出-end
+            if (lDist_calculation < 0)
+            {
+                temp_dist2leftlane = LaneRes.Dist2LeftLane;		//始终保存上一帧的非0值
+                temp_dist2leftlanecal = lDist_calculation;
+            }
+            if(left_distance_new.size()<3)
+                left_distance_new.push_back(LaneRes.Dist2LeftLane);
+            else if(left_distance_new.size()==3 and abs(LaneRes.Dist2LeftLane-left_distance_new[2])<20)
+                left_distance_new.push_back(LaneRes.Dist2LeftLane);
+
+            /*if(left_distance_new.size()>=4)
+            {
+                int left_mean=0.1*left_distance_new[0]+0.1*left_distance_new[1]+0.3*left_distance_new[2]+0.5*left_distance_new[3];
+                LaneRes.Dist2LeftLane=left_mean;
+                std::vector<int>::iterator it=left_distance_new.begin();
+                left_distance_new.erase(it);
+                cout<<"left_filter_4="<<left_distance_new[2]<<endl;
+            }
+            else if(left_distance_new.size()==3)
+            {
+                int left_mean=0.3*left_distance_new[0]+0.3*left_distance_new[1]+0.4*left_distance_new[2];
+                LaneRes.Dist2LeftLane=left_mean;
+                cout<<"left_filter_3="<<left_distance_new[2]<<endl;
+            }*/
+            //cout<<temp_dist2leftlane<<"_______"<<LaneRes.Dist2LeftLane<<endl;
+            //if (temp_dist2leftlane<=40 && LaneRes.Dist2LeftLane3)
+            /*if (temp_dist2leftlane<=50 && LaneRes.Dist2LeftLane>=200)
+            {
+                cout<<temp_dist2leftlane<<"_______"<<LaneRes.Dist2LeftLane<<endl;
+                LaneRes.IsCrossingLane = 4;		//向左压线-2
+            }
+
+            if (lDist_calculation >= 0)
+            {
+                LaneRes.IsCrossingLane = 2;   //向左压线
+                LaneRes.Dist2LeftLane = temp_dist2leftlane;		//output the last value
+                temp_dist2leftlanecal = lDist_calculation;
+            }*/
+            if (rDist_calculation > 0)
+            {
+                temp_dist2rightlane = LaneRes.Dist2RightLane;		//始终保存上一帧的非0值
+                temp_dist2rightlanecal = rDist_calculation;
+            }
+            if(right_distance_new.size()<3)
+                right_distance_new.push_back(LaneRes.Dist2RightLane);
+            else if(right_distance_new.size()==3 and abs(LaneRes.Dist2RightLane-right_distance_new[2])<20)
+                right_distance_new.push_back(LaneRes.Dist2RightLane);
+
+            if (final_lanes.left_second_valid == true)
+            {
+                LaneRes.Dist2NextLeftLane = LaneRes.Dist2LeftLane + LANE_WIDTH_WORLD / 10;  //=距离左侧车道线的距离+车道线的宽
+                if (LaneRes.Dist2NextLeftLane > 800)
+                {
+                    waitKey(0);
+                }
+            }
+            else
+            {
+                LaneRes.Dist2NextLeftLane = 0;
+            }
+            /*if(right_distance_new.size()>=4)
+            {
+                int right_mean=0.1*right_distance_new[0]+0.1*right_distance_new[1]+0.3*right_distance_new[2]+0.5*right_distance_new[3];
+                LaneRes.Dist2RightLane=right_mean;
+                std::vector<int>::iterator it=right_distance_new.begin();
+                right_distance_new.erase(it);
+            }
+            else if(right_distance_new.size()==3)
+            {
+                int right_mean=0.3*right_distance_new[0]+0.3*right_distance_new[1]+0.4*right_distance_new[2];
+                LaneRes.Dist2RightLane=right_mean;
+            }
+
+
+            else if (rDist_calculation < 0)
+            {
+                LaneRes.IsCrossingLane = 1;  //向右压线
+                LaneRes.Dist2RightLane = temp_dist2rightlane;		//output the last value
+                temp_dist2rightlanecal = rDist_calculation;
+            }*/
+
+            if (final_lanes.right_second_valid == true)
+            {
+                LaneRes.Dist2NextRightLane = LaneRes.Dist2RightLane+ LANE_WIDTH_WORLD / 10;//=距离右侧车道线的距离+车道线的宽
+            }
+            else
+            {
+                LaneRes.Dist2NextRightLane = 0;
+            }
+            LaneRes.AngleofVehicle2Lane = (int)(m_fFinalAngle * 10);
+        }
+
+
+            //follow the lane of the last frame when missing the lane
+        else
+        {
+            LaneRes.Dist2LeftLane = temp_dist2leftlane;		//没有车道线的时候，输出上一帧的值
+            LaneRes.Dist2RightLane = temp_dist2rightlane;		//没有车道线的时候，输出上一帧的值
+            temp_dist2leftlanecal = lDist_calculation;
+            temp_dist2rightlanecal = rDist_calculation;
+            LaneRes.IsCrossingLane = 3;			//车道线丢失时跨越车道线的值为3
+            //if ((LaneRes.TypeofRightLane != 0) && (LaneRes.TypeofLeftLane != 0))
+            //break;
+        }
+        //输出车道线距离及跨越车道线标识判断-end add by nh 20171115
+        //屏幕打印距离左右车道线距离结果以及跨越车道线标识-start add by nh 20171115
+        if(_VIDEO_STORE)
+        {originalVideo << frame;}	//储存源视频写入帧数据
+        ostringstream text_temp0;//set up a stream
+        //text_temp << l_distance1;
+        text_temp0 << abs(xy_left.at<float>(0,0)/10);//abs(l_real/10);
+        //putText(frame, "y=300, DistleftLane2OpticAxis:",Point(30,20),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, "New, DistleftLane2OpticAxis:",Point(30,20),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp0.str(),Point(300,20),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        //putText(road, "y=300, DistleftLane2OpticAxis:",Point(30,20),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, "New, DistleftLane2OpticAxis:",Point(30,20),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp0.str(),Point(300,20),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp1;//set up a stream
+        //text_temp1 << l_distance;
+        text_temp1 << abs(xy_right.at<float>(0,0)/10);//abs(r_real/10);
+        //putText(frame, "y=400, DistleftLane2OpticAxis:",Point(30,50),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, "New, DistRightLane2OpticAxis:",Point(30,50),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp1.str(),Point(300,50),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        //putText(road, "y=400, DistleftLane2OpticAxis:",Point(30,50),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, "New, DistRightLane2OpticAxis:",Point(30,50),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp1.str(),Point(300,50),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp2;//set up a stream
+        //text_temp2<< l_distance2;
+        text_temp2<< abs(l_realDist)+abs(r_realDist);
+        //putText(frame, "y=480, DistleftLane2OpticAxis:",Point(30,80),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, "New, DistLaneWidth:",Point(30,80),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp2.str(),Point(300,80),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        //putText(road, "y=480, DistleftLane2OpticAxis:",Point(30,80),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, "New, DistLaneWidth:",Point(30,80),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp2.str(),Point(300,80),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp3;//set up a stream
+        text_temp3<< LaneRes.Dist2LeftLane;
+        //putText(frame, "perspective transformation, DistleftLane2OpticAxis:",Point(30,110),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp3.str(),Point(500,110),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        putText(road, "perspective transformation, DistleftLane2OpticAxis:",Point(30,110),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp3.str(),Point(500,110),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp4;//set up a stream
+        text_temp4<< LaneRes.Dist2RightLane;
+        //putText(frame, "perspective transformation, DistRightLane2OpticAxis:",Point(30,140),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp4.str(),Point(500,140),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        putText(road, "perspective transformation, DistRightLane2OpticAxis:",Point(30,140),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp4.str(),Point(500,140),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp5;//set up a stream
+        text_temp5<<xy_left.at<float>(0,0)/10;
+        //putText(frame, "original left distance",Point(30,170),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp5.str(),Point(250,170),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        putText(road, "original left distance:",Point(30,170),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp5.str(),Point(250,170),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp6;//set up a stream
+        text_temp6<< xy_right.at<float>(0,0)/10;
+        //putText(frame, "original right distance:",Point(30,200),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp6.str(),Point(250,200),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        putText(road, "original right distance:",Point(30,200),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp6.str(),Point(250,200),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp7;//set up a stream
+        text_temp7<< angle;
+        //putText(frame, "CalculateAngle:",Point(30,230),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp7.str(),Point(250,230),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        putText(road, "CalculateAngle:",Point(30,230),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp7.str(),Point(250,230),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        ostringstream text_temp8;//set up a stream
+        text_temp8<< (size_t)LaneRes.IsCrossingLane;
+        //putText(frame, "LaneRes.IsCrossingLane:",Point(30,260),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        //putText(frame, text_temp8.str(),Point(250,260),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+        putText(road, "LaneRes.IsCrossingLane:",Point(30,260),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(0,0,0),1,8);
+        putText(road, text_temp8.str(),Point(250,260),CV_FONT_HERSHEY_COMPLEX,0.5,Scalar(255,0,0),1,8);
+
+        //draw_detected_lane(road, final_lanes, framecount);	//在road图像上画理想识别的车道线直线
+        //roadVideo << road;//储存road视频写入帧数据
+        //屏幕打印距离左右车道线距离结果以及跨越车道线标识-end add by nh 20171115
+        LaneRes.AngleofVehicle2Lane = (int)(m_fFinalAngle * 1000);
+        //cout << "________________"<<LaneRes.Dist2LeftLane<<"________________"<<endl;
+        //cout << "________________"<<LaneRes.Dist2RightLane<<"________________"<<endl;
+        //在buffer文件中储存车道线距离及跨越车道线标志信息用于Excel数据分析-start add by nh 20171115
+        buffer<<"[300]: "<< lDist_calculation <<"[400]: "<< rDist_calculation<<"[000]:" << LaneRes.Dist2LeftLane<<"[001]:" << LaneRes.Dist2RightLane<<"[002]:"<<(size_t)LaneRes.IsCrossingLane<<endl;
+        //在buffer文件中储存车道线距离及跨越车道线标志信息用于Excel数据分析-end add by nh 20171115
+    }
+
+    g_typeofleftlane=LaneRes.TypeofLeftLane;
+    g_typeofrightlane=LaneRes.TypeofRightLane;
+    g_qualityoflane=LaneRes.QualityOfLane;
+    g_iscrossinglane=LaneRes.IsCrossingLane;
+    g_dist2leftlane=LaneRes.Dist2LeftLane;
+    g_dist2righttlane=LaneRes.Dist2RightLane;
+
+
+    /*if(location_out.is_open())
+    {
+        location_out <<"l_distance:  " << LaneRes.Dist2LeftLane << " R_Dist: " << LaneRes.Dist2RightLane<<endl;
+    }
+    if(location_out_new.is_open())
+    {
+        location_out_new<<"[300]: "<<"l_distance1:  " << l_distance1 <<endl;
+        location_out_new<<"[400]: "<<"l_distance:  " << l_distance <<endl;
+        location_out_new<<"[480]: "<<"l_distance2:  " << l_distance2 <<endl;
+        location_out_new<<"[000]" << LaneRes.Dist2LeftLane <<endl<<endl;
+    }*/
+
+    g_dist2nextleftlane=LaneRes.Dist2NextLeftLane;
+    g_dist2nextrightlane=LaneRes.Dist2NextRightLane;
+    g_angleofvehicle2lane=LaneRes.AngleofVehicle2Lane;
+    g_curveoflane=LaneRes.CurvOfLane;
+    g_derivoflanecurv=LaneRes.DerivOfLaneCurv;
+}
+
+
+//===================================前向目标相对距离计算========================================
+void relative_distance_compute(vector<SSD_Detector::Object>& obj_pool)
+{
+    vector<Point2d> tmp_vec;
+    /* Determine the position of object */
+    int left_ID = 0, in_ID = 0, right_ID = 0;
+    int left_dist = 255, in_dist = 255, right_dist = 255;
+    for (int i = 0; i < obj_pool.size(); i++)
+    {
+        // if object is car(3), truck(4), van(5) or person(7)
+//add by zhangsijia 10.31 start
+        if(obj_pool[i].label == 2 || obj_pool[i].label == 3 || obj_pool[i].label == 7 ||
+                obj_pool[i].label == 4 || obj_pool[i].label == 5)
+//add by zhangsijia 10.31 end
+        {
+            if(lanes.empty())//can not detect lane, draw user define line
+            {
+                lanes.push_back(Point(260, 220));
+                lanes.push_back(Point(0, 400));
+                lanes.push_back(Point(350, 220));
+                lanes.push_back(Point(640, 400));
+            }
+            Point2f middle_point = Point2f(obj_pool[i].boundingbox.x + obj_pool[i].boundingbox.width/2,
+                                           obj_pool[i].boundingbox.y + obj_pool[i].boundingbox.height);
+            save_distance<<"u:"<<middle_point.x<<",v:"<<middle_point.y<<";";
+
+            //-------------------------------相对距离计算-------------------------------
+            //Point2d dist = calculate_distance_MLEU260(480-middle_point.y-crop_region.y,middle_point.x);
+            Point2d dist = calculate_distance(480-middle_point.y-crop_region.y,middle_point.x);
+            /*if(TargetCnt<5)
+          {
+               TargetRes[TargetCnt].TypeofTarget = obj_pool[i].label;
+                TargetRes[TargetCnt].TargetVDist = (int)(dist.y * 100);
+              TargetCnt ++;
+          }*/
+            //ofstream save_distance("distance.txt");
+            //cout<<"middle_point.y:"<<middle_point.y<<endl;
+            //cout<<"distance::::"<<dist<<endl;
+            save_distance<<dist.x<<";"<<dist.y<<";"<<endl;
+            save_distance<<endl;
+            obj_pool[i].dist = dist;
+
+            //[@] Start___________________
+            tmp_vec.push_back(dist);
+            //[@] End___________________
+
+            Point2f left_start = Point2f(lanes[0].x-crop_region.tl().x, lanes[0].y-crop_region.tl().y);
+            Point2f left_end = Point2f(lanes[1].x-crop_region.tl().x, lanes[1].y-crop_region.tl().y);
+            Point2f right_start = Point2f(lanes[2].x-crop_region.tl().x, lanes[2].y-crop_region.tl().y);
+            Point2f right_end = Point2f(lanes[3].x-crop_region.tl().x, lanes[3].y-crop_region.tl().y);
+            int isleft = justify_position(left_start, left_end, middle_point);
+            int isright = justify_position(right_start, right_end, middle_point);
+
+
+
+            if(isleft==0)
+            {
+                // if the object is on the left of left lane
+                if(dist.x<left_dist)
+                {
+                    left_dist = (int)dist.x;
+                    left_ID = i;
+                }
+                obj_pool[i].position = "left";
+            }
+            else if(isleft==1 && isright==0)
+            {
+                // if the object is in the egolane
+                if(dist.x<in_dist)
+                {
+                    in_dist = (int)dist.x;
+                    in_ID = i;
+                }
+                obj_pool[i].position = "front";
+            }
+            else if(isright=1)
+            {
+                // if the object is on the right of right lane
+                if(dist.x<right_dist)
+                {
+                    right_dist = (int)dist.x;
+                    right_ID = i;
+                }
+                obj_pool[i].position = "right";
+            }
+
+        }
+    }
+}
+
+//===================================前方危险目标相对速度计算========================================
+//结果存在TargetRes[0].TargetRelSpeed中
+void relative_speed_compute(vector<SSD_Detector::Object>& obj_pool)
+{
+    //[@] Start_____________________
+    for (int i = 0; i < obj_pool.size(); i++)
+    {
+        // if object is car(3), truck(4), van(5) or person(7)
+        if(obj_pool[i].label == 3 || obj_pool[i].label == 7 ||
+                obj_pool[i].label == 4 || obj_pool[i].label == 5) {
+
+            if( obj_pool.size() > 0) {
+
+                relative_frame_has_object_index ++;
+                relative_ts.push_back((double)cv::getTickCount());
+#ifdef relative_debug
+                cout<< "---------relative_frame_index>" << relative_frame_index << "<---------" << endl;
+                cout<< "---------relative_frame_has_object_index>"<<relative_frame_has_object_index <<"<---------"<<endl;
+                cout << "-------------TS_Size>" << relative_ts.size() << "<-------------" << endl;
+#endif
+
+                //存储多目标时使用tmp_vec
+//					    if (tmp_vec.size() == 0) {
+//						    tmp_vec = relative_dists.back();
+//					    }
+
+//					    tmp_vec.clear();
+
+                relative_dists.push_back(TargetRes[0]);
+
+                if (relative_frame_has_object_index > relative_frame_step) {
+
+                    // Delta_t
+                    int current_idx = relative_frame_has_object_index-1;
+
+#ifdef relative_debug
+//					    for ( int idx=0; idx < relative_ts.size(); ++idx) {
+//						    cout << "-------------Ts_item>"<< relative_ts.at(idx) << endl;
+//					    }
+#endif
+                    int idx1 = relative_saft_limit(current_idx);
+                    int idx2 = relative_saft_limit(current_idx-relative_frame_step);
+#ifdef relative_debug
+                    cout << "-------------TS_idx1>" << idx1 << ":" << relative_ts.at(idx1) << "<-------------" << endl;
+                    cout << "-------------TS_idx2>" << idx2 << ":" <<relative_ts.at(idx2) << "<-------------" << endl;
+
+#endif
+                    double delta_time = ((double)relative_ts.at(idx1)) - (double)relative_ts.at(idx2);
+                    relative_delta_time = delta_time /cv::getTickFrequency();
+#ifdef relative_debug
+                    cout << "-------------Time>" << relative_delta_time << "<-------------" << endl;
+
+
+
+                    // 输出第i个目标
+                    cout << "-------------Dist_idx1>" << idx1 << ":" << relative_dists.at(idx1).TargetVDist << "<-------------" << endl;
+                    cout << "-------------Dist_idx2>" << idx2 << ":" << relative_dists.at(idx2).TargetVDist << "<-------------" << endl;
+
+#endif
+                    //仅输出第一个object
+                    Uint16 relative_dist_elder = relative_dists.at(relative_saft_limit(current_idx)).TargetVDist;
+                    Uint16 relative_dist_younger = relative_dists.at(relative_saft_limit(current_idx-relative_frame_step)).TargetVDist;
+
+                    // 前帧-后帧，为正说明距离变小，速度为正
+                    double raw_relative_delta_v_output = (double)(relative_dist_younger - relative_dist_elder)/relative_delta_time;
+#ifdef relative_debug
+                    cout <<"-------------raw_relative_delta_v_output(100*m/s)>" <<  raw_relative_delta_v_output << "<-------------" << endl;
+#endif
+                    //报文15bit，Max32767： 327.67km/h
+                    // threshold: -120-120km/
+                    double tmp_v = raw_relative_delta_v_output * 3.6;
+                    double relative_delta_v_output = 0.0;
+
+	                // 最大阈值设置
+	                if (tmp_v > 12000.0) {
+		                relative_delta_v_output = 12000.0;
+	                }else if (tmp_v < -12000.0) {
+		                relative_delta_v_output = -12000.0;
+	                } else {
+		                relative_delta_v_output =  tmp_v;
+	                }
+
+	                // 最小阈值设置
+	                if (tmp_v > -500.0 and tmp_v < 500.0) {
+		                relative_delta_v_output = 0.0;
+	                } else {
+		                relative_delta_v_output =  tmp_v;
+	                }
+#ifdef relative_debug
+	                cout <<"------------->\n\n\n\nrelative_delta_v_output(km/h*100)>"<<  relative_delta_v_output<< "\n\n\n\n<-------------" << endl;
+#endif
+	                // 平均滤波器
+	                relative_delta_v_output = filter_average_calc(relative_delta_v_output);
+
+	                // 仅输出第一个object的相对速度
+                    TargetRes[0].TargetRelSpeed = 0-relative_delta_v_output;
+                }
+            }
+
+        }
+    }
+    //[@] End_____________________
+}
+
+//==============================车道线识别线程=====================================
+void func_lane_detect()
+{
+  	Mat H_transform;//逆透视矩阵
+  	FileStorage fs(IPM_file, FileStorage::READ);
+	fs["matrix"] >> H_transform;//从文件读入矩阵
+	fs.release();
+
+    //-------------------------从摄像头/视频中读入图像流-------------------------
+  	//VideoCapture inputVideo(FLAGS_camera_id);
+  	//VideoCapture inputVideo(0);
+  	//VideoCapture inputVideo("/media/ubuntu/8618832F18831D75/0913/2/output_original.avi");
+  	VideoCapture inputVideo("/media/ubuntu/288CA2138CA1DB96/data/Thu_Nov_30_15_41_12_2017/original.avi");
+
+
+ 	if (!inputVideo.isOpened())
+  	{
+    	LOG(FATAL) << "Open video error !";
+    	return ;
+  	}
+  	
+  	// if read camera and specify the size, set the parameters
+  	if(im_width > 0)
+	{
+    	inputVideo.set(CV_CAP_PROP_FRAME_WIDTH, im_width);
+    	LOG(INFO) << "Set image width is  " << im_width ;
+  	}
+  	if(im_height > 0)
+	{
+    	inputVideo.set(CV_CAP_PROP_FRAME_HEIGHT, im_height);
+    	LOG(INFO) << "Set image height is  " << im_height ;
+  	}
+  	if(im_fps > 0)
+	{
+	    inputVideo.set(CV_CAP_PROP_FPS, im_fps);
+    	LOG(INFO) << "Set capture fps is  " << im_fps ;
+  	}
+
+  	s = Size((int)inputVideo.get(CV_CAP_PROP_FRAME_WIDTH), (int)inputVideo.get(CV_CAP_PROP_FRAME_HEIGHT));
+  	cout << "TotalFrame  " << inputVideo.get(CV_CAP_PROP_FRAME_COUNT) << endl;
+  	cout << "FPS   "  << inputVideo.get(CV_CAP_PROP_FPS) << endl;
+  	cout << "Size  " << s.width << "x" << s.height << endl;
+    //inputVideo.set(CV_CAP_PROP_POS_FRAMES,1000);//设置视频读入的起始帧
+
+
+
+  	CWarning(); //初始化相应的值
+
+  	vector<Mat> _debug_images;//存储车道线检测的中间图像,用于调试
+  	while(true)
+	{
+        usleep(5000);//加入短暂延时,防止循环过快导致卡顿
+    	inputVideo >> frame;
+		//LaneRes.IsCrossingLane = 0;
+    	if(!frame.empty())
+		{
+			if(framecount>1000000) framecount=10;
+			//if(_DEBUG)LOG(INFO)<< "The frame is " << framecount;
+			//if(framecount<1000){framecount++; continue;}
+			save_distance<<framecount<<";";
+
+
+      		road = frame.clone();
+     		double t = (double)cv::getTickCount();
+     		_debug_images.clear();
+
+            //--------------------------------车道线检测---------------------------------------
+	  		final_lanes = lane_detector(road, framecount, H_transform, _debug_images, _DEBUG);
+
+
+			#ifdef  WARNING
+            m_InputVehicleStatus.CarSpeed = 16666; //vehicle speed	//add by nh
+			m_iFinalLfDist = final_lanes.m_fCentre2LeftDist*1000;
+			m_fFinalAngle = final_lanes.m_fAngle;
+			if ((final_lanes.left_solid_line == 0 || final_lanes.left_solid_line == 1))
+			{
+				m_WLfLine.trust = 2;
+			}
+			else
+			{
+				m_WLfLine.trust = 0;
+			}
+
+			if ((final_lanes.right_soild_line == 0 || final_lanes.right_soild_line == 1))
+			{
+				m_WRtLine.trust = 2;
+			}
+			else
+			{
+				m_WRtLine.trust = 0;
+			}
+			m_bCrossMark = 0;
+			DprtSta = LDW_Warning(&m_InputVehicleStatus, m_iFinalLfDist, m_fFinalAngle, m_WRtLine.trust || m_WLfLine.trust, m_bCrossMark);
+
+			if (DprtSta.DepartureState != 0)
+			{
+				std::cout << "Lane departure is on. \n" << std::endl;
+			}
+			#endif
+      		t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+
+
+            lane_distance_compute();
+
+            line(frame, Point(g_LeftLane_x0,g_LeftLane_y0),Point(g_LeftLane_x1,g_LeftLane_y1) ,Scalar(0, 200, 200), 1, CV_AA);
+            line(frame, Point(g_RightLane_x2,g_RightLane_y2),Point(g_RightLane_x3,g_RightLane_y3) ,Scalar(0, 200, 200), 1, CV_AA);
+		  	
+		    //---------------------------实时更新车道线识别信息,存入数组用于传输---------------------------
+		    unsigned char lane_buffer[8] = {0};
+		    unsigned short temp = 0;
+
+		    lane_buffer[0] = g_objectnum<< 4; //固定为5个障碍物
+		    lane_buffer[1] = (g_typeofleftlane<<6)|(g_typeofrightlane<<2);  //左右车道线的类型
+		    lane_buffer[2] = (g_qualityoflane)<<6;    //车道线质量
+		    lane_buffer[3] = g_iscrossinglane<<6;      //判断是否在跨越车道线
+		    lane_buffer[4] = (g_dist2leftlane>>2)&0xff;
+		    lane_buffer[5] = ((g_dist2leftlane&0x03)<<6) | ((g_dist2righttlane >> 6) & 0x0f);//?
+		    lane_buffer[6] = (g_dist2righttlane & 0x3f) << 2;//?
+		    lane_buffer[7] = 0;
+
+		    for(int cnt = 0;cnt<8;cnt++)
+		    {
+		    	can_buffer01[cnt+2] = lane_buffer[cnt];
+		    }
+
+		    lane_buffer[0] = (g_dist2nextleftlane>>4)&0xff;
+		    lane_buffer[1] = ((g_dist2nextleftlane & 0x0f)<<4)|((g_dist2nextrightlane>>8)&0x0f);
+		    lane_buffer[2] = g_dist2nextrightlane & 0xff;
+		    lane_buffer[3] = (g_angleofvehicle2lane >> 2)&0xff;
+		    lane_buffer[4] = (g_angleofvehicle2lane &0x03)<<6;
+		    lane_buffer[5] = (g_curveoflane>>8)&0xff;
+		    lane_buffer[6] = g_curveoflane &0xff;
+		    lane_buffer[7] = g_derivoflanecurv;
+
+		    for(int cnt = 0;cnt<8;cnt++)
+		    {
+		    	can_buffer02[cnt+2] = lane_buffer[cnt];
+		    }
+
+
+		    if(_DEBUG && framecount > 1)
+		    {
+			    //Show the debug images
+	  		    if(_debug_images.size() == 6)
+			    {
+	  		    	//imshow("edge", _debug_images[0]);
+	  		    	//imshow("vertical", _debug_images[1]);
+	  		    	//imshow("edge2", _debug_images[2]);
+	  		    	//imshow("horizontal", _debug_images[3]);
+	  		    	//imshow("test", _debug_images[4]);
+			        //imshow("perspective", _debug_images[5]);
+	  		    }
+			    //  imshow("Lanes Detection Result", road);
+			    //waitKey(1);
+		    }
+
+			if(DETECT_FLAG == true & framecount > 1)
+			{
+
+				DETECT_FLAG = false;
+
+				img_temp = frame.clone();
+
+				lanes.clear();
+
+		        // if lanes are detected, pass them to the global variable "vector<> lanes" for the using of object detection
+				if ((final_lanes.left_solid_line == 0 || final_lanes.left_solid_line == 1)
+					&& (final_lanes.right_soild_line == 0 || final_lanes.right_soild_line == 1))
+				{
+
+					for (size_t l = 0; l < 4; l++) 
+					{
+
+						Point2f pt_temp = Point2f(final_lanes.center_lines[l].x+MY_boundingBox.x, final_lanes.center_lines[l].y+MY_boundingBox.y);
+
+						lanes.push_back(pt_temp);
+
+					}
+				}
+			}
+            framecount++;
+		}
+    else OVER = true;//Video end
+	}
+    if(location_out.is_open() && location_out_new.is_open())
+    {
+        location_out.close();
+        location_out_new.close();
+    }
+}
+
+//=============================CAN报文发送线程=====================================
+void can_transfer(int fd2)
+{
+  int nread2;
+  while(1)
+  {
+    usleep(50000);
+	nread2 = write(fd2, can_buffer01, 10);
+	usleep(1500);
+	nread2 = write(fd2, can_buffer02, 10);
+	usleep(1500);
+	nread2 = write(fd2, can_buffer10, 10);
+	usleep(1500);
+	nread2 = write(fd2, can_buffer11, 10);
+	usleep(1500);
+	nread2 = write(fd2, can_buffer12, 10);
+	usleep(1500);
+	nread2 = write(fd2, can_buffer13, 10);
+	usleep(1500);
+	nread2 = write(fd2, can_buffer14, 10);
+	usleep(1500);
+  }
+}
+
+void SSD_detect()
+{
+    Caffe::SetDevice(0);
+    Caffe::set_mode(Caffe::GPU);
+	while(1)
+	{
+		if(!frame.empty())
+		{
+            //if(NEW_DETECT)NEW_DETECT = false;
+			//if (_DEBUG)LOG(INFO) << "The frame is " << framecount;
+			img = frame(crop_region).clone();
+			double t = (double) cv::getTickCount();
+            if(!NEW_DETECT)
+            {
+                //------------------------真-目标检测-----------------------------------
+                detector.detect(img, 300, FLAGS_confidence_threshold);
+                //计算目标检测时间
+                t = ((double) cv::getTickCount() - t) / cv::getTickFrequency();
+                if (_DEBUG)
+                {
+                    LOG(INFO) << "object detection time is : " << t << " s.";
+                }
+
+
+                relative_distance_compute(detector.Obj_pool);
+
+                CIPV_Judge(detector.Obj_pool);
+                detector.FCW_label = FCW_label;
+                detector.FCW_object_index = FCW_object_index;
+
+
+                // 第1帧detect，初始化track线程，每帧都track
+                tr_detect_number = detector.Obj_pool.size();
+
+
+                // define buffer area
+                cout << "---------Obj_pool.size>" << detector.Obj_pool.size()<< "<---------"<< endl;
+                NEW_DETECT = true;
+            }
+
+		}
+	}
+}
+
+//[#] 11.2 Start____________________________________________
+void func_tracking_start_single(int index)
+{
+	double tmp_t1 = (double) cv::getTickCount();
+
+	cv::Rect result;
+	Tracking track = Tracking();
+	track.label = Obj_pool_temp[index].label;
+	track.Boundingbox = ScaleBoundBox(Obj_pool_temp[index].boundingbox, 0.9);
+
+	track.tracker.init(track.Boundingbox, img_temp);
+
+	double tmp_t2 = (double) cv::getTickCount();
+	double tmp_t = (tmp_t2 - tmp_t1 ) / cv::getTickFrequency();;
+#ifdef TR_DEBUG_LAYER_1
+#ifdef TR_DEBUG_LAYER_2
+	cout << "___________________________________________________\n"
+	     << "[func_tracking_update_single Time: "<< tmp_t << "]\n"
+	     << "[func_tracking_start_single: "<< index << "]\n"
+	     << "Obj_pool_temp.size():" << Obj_pool_temp.size()
+
+	     << "___________________________________________________\n";
+#endif
+#endif
+
+    if(FCW_label_temp)
+    {
+        tracking_obj_pool[0] = track;
+        tracked_obj_pool[0] = Obj_pool_temp[index];
+    }
+    else
+    {
+        tracking_obj_pool[index] = track;
+        tracked_obj_pool[index] = Obj_pool_temp[index];
+    }
+
+}
+
+void func_tracking_update_single(int index)
+{
+	double tmp_t1 = (double) cv::getTickCount();
+
+	float score;
+	cv::Rect result_;
+
+    if(FCW_label_temp)
+    {
+        result_ = tracking_obj_pool[0].tracker.update(img_temp, score);
+
+        SSD_Detector::Object object_result = SSD_Detector::Object(result_,
+                                                                  Obj_pool_temp[index].label);
+        tracked_obj_pool[0] = object_result;
+    }
+    else
+    {
+        result_ = tracking_obj_pool[index].tracker.update(img_temp, score);
+
+        SSD_Detector::Object object_result = SSD_Detector::Object(result_,
+                                                                  Obj_pool_temp[index].label);
+        tracked_obj_pool[index] = object_result;
+    }
+
+
+	double tmp_t2 = (double) cv::getTickCount();
+	double tmp_t = (tmp_t2 - tmp_t1 ) / cv::getTickFrequency();;
+#ifdef TR_DEBUG_LAYER_1
+#ifdef TR_DEBUG_LAYER_2
+	cout << "___________________________________________________\n"
+	     << "[func_tracking_update_single Time: "<< tmp_t << "]\n"
+	     << "___________________________________________________\n";
+#endif
+#endif
+}
+//[#] 11.2 End____________________________________________
+
+void Object_track()
+{
+#ifdef TR_DEBUG_LAYER_1
+#ifdef TR_DEBUG_LAYER_2
+    cout<<"1-FCW_label_temp: "<<FCW_label_temp<<endl;
+    cout<<"2-FCW_object_index_temp: "<<FCW_object_index_temp<<endl;
+    cout<<"3-Obj_pool_temp.size(): "<<Obj_pool_temp.size()<<endl;
+    cout<<"4-track_pool_temp.size(): "<<track_pool_temp.size()<<endl;
+#endif
+#endif
+    NEW_IMAGE = false;
+	if(NEW_DETECT)
+	{
+        NEW_DETECT = false;
+		tracking_obj_pool.clear();
+		tracked_obj_pool.clear();
+
+#ifndef RESTRICTED_DETECTED
+		for (size_t i = 0; i < Obj_pool_temp.size(); i++)
+		{
+		    Tracking tracking_obj = Tracking();
+			tracking_obj_pool.push_back(tracking_obj);
+
+			SSD_Detector::Object tracked_obj = SSD_Detector::Object();
+			tracked_obj_pool.push_back(tracked_obj);
+		}
+#else
+		if(FCW_label_temp)
+		{
+			Tracking tracking_obj = Tracking();
+			tracking_obj_pool.push_back(tracking_obj);
+			SSD_Detector::Object tracked_obj = SSD_Detector::Object();
+			tracked_obj_pool.push_back(tracked_obj);
+		}
+		else {
+			for (size_t i = 0; i < Obj_pool_temp.size(); i++) {
+				Tracking tracking_obj = Tracking();
+				tracking_obj_pool.push_back(tracking_obj);
+
+				SSD_Detector::Object tracked_obj = SSD_Detector::Object();
+				tracked_obj_pool.push_back(tracked_obj);
+			}
+		}
+#endif
+
+#ifdef TR_DEBUG_LAYER_1
+#ifdef RESTRICTED_DETECTED
+		cout << "___________________________________________________\n"
+			 << "[Debug Point1]\n"
+			 << "___________________________________________________\n";
+#endif
+#endif
+		// match object using tracking through multi-thread
+		boost::thread_group group_detect;
+#ifndef RESTRICTED_DETECTED
+		for (size_t i = 0; i < Obj_pool_temp.size(); i++) {
+			group_detect.create_thread(boost::bind(&func_tracking_start_single, i));
+		}
+#else
+		if(FCW_label_temp)
+			group_detect.create_thread(boost::bind(&func_tracking_start_single, FCW_object_index_temp));
+		else
+		{
+			for (size_t i = 0; i < Obj_pool_temp.size(); i++)
+			{
+				group_detect.create_thread(boost::bind(&func_tracking_start_single, i));
+			}
+		}
+#endif
+		group_detect.join_all();
+
+#ifdef TR_DEBUG_LAYER_1
+#ifdef RESTRICTED_DETECTED
+		cout << "___________________________________________________\n"
+			 << "[Debug Point2]\n"
+			 << "___________________________________________________\n";
+#endif
+		cout << "___________________________________________________\n"
+			 << "[Detect Frame]\n"
+			 << "tr_count:" << tr_count << "\n"
+			 << "tr_detect_number:" << tr_detect_number << "\n"
+			 << "___________________________________________________\n";
+#endif
+
+        TRACK_FLAG = true;
+        //保存初始化跟踪的目标,用于后面的连续跟踪
+        track_pool_temp = Obj_pool_temp;
+        FCW_label_temp2 = FCW_label_temp;
+        FCW_object_index_temp2 = FCW_object_index_temp;
+	}
+
+    if(TRACK_FLAG)
+    {
+        double tmp_t1 = (double) cv::getTickCount();
+
+        // match object using tracking through multi-thread
+        boost::thread_group group_detect;
+#ifndef RESTRICTED_DETECTED
+        for (size_t i = 0; i < Obj_pool_temp.size(); i++)
+	{
+		   group_detect.create_thread(boost::bind(&func_tracking_update_single, i));
+	}
+#else
+        //cout<<"this1"<<endl;
+        if(FCW_label_temp2)
+            group_detect.create_thread(boost::bind(&func_tracking_update_single, FCW_object_index_temp2));
+        else
+        {
+            for (size_t i = 0; i < track_pool_temp.size(); i++)
+            {
+                group_detect.create_thread(boost::bind(&func_tracking_update_single, i));
+            }
+        }
+#endif
+        group_detect.join_all();
+
+
+#ifndef RESTRICTED_DETECTED
+        detector.Obj_pool = tracked_obj_pool;
+#else
+#ifdef TR_DEBUG_LAYER_1
+        cout << "___________________________________________________\n"
+             << "[RESTRICTED_DETECTED]\n"
+             << "track_pool_temp.size() :" << track_pool_temp.size() << "\n"
+             << "___________________________________________________\n";
+#endif
+        if(FCW_label_temp2)
+            track_pool_temp.at(FCW_object_index_temp2) = tracked_obj_pool.at(0);
+        else
+        {
+            track_pool_temp = tracked_obj_pool;
+        }
+        Obj_pool_temp = track_pool_temp;
+#endif
+
+        double tmp_t2 = (double) cv::getTickCount();
+        double tmp_t = (tmp_t2 - tmp_t1 ) / cv::getTickFrequency();;
+
+#ifdef TR_DEBUG_LAYER_1
+        cout << "___________________________________________________\n"
+             << "[Track Frame]\n"
+             << "tr_count:" << tr_count << "\n"
+             << "In Track Code Snipet Time:" << tmp_t << "\n"
+             << "___________________________________________________\n";
+#endif
+
+
+        //[#] 11.2 End____________________________________________
+    }
+
+
+}
+
+int main(int argc, char** argv)
+{
+  	::google::InitGoogleLogging(argv[0]);
+  	FLAGS_alsologtostderr = 1;
+  	gflags::SetUsageMessage("Read video file and save video.\n"
+        "Usage:\n"
+        "    TAGE_Camera --model_file *.prototxt --weights_file *.caffemodel\n"
+        "         --camera_id 0 or 1 --output_video *.avi --ipm_file *.xml\n"
+        "         --confidence_threshold 0.2\n");
+ 	 gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+    //-------------------gflag传入的值---------------------
+  	//string model_prototxt_file = FLAGS_model_file;
+  	//string trained_caffemodel_file = FLAGS_weights_file;
+  	camera_id = FLAGS_camera_id;
+  	output_video = FLAGS_output_video;
+  	IPM_file = FLAGS_ipm_file;
+  	im_width = FLAGS_width;
+  	im_height = FLAGS_height;
+  	im_fps = FLAGS_fps;
+  	_DEBUG = FLAGS_DEBUG;
+  	_SERIAL_OPEN = FLAGS_SERIAL_OPEN;
+  	_VIDEO_STORE = FLAGS_VIDEO_STORE;
+    //caffe设置
+	Caffe::SetDevice(0);
+	Caffe::set_mode(Caffe::GPU);
+
+  	//---------------------------SSD初始化---------------------------
+
+  	//----------------------开启车道线识别线程--------------------------
+  	boost::thread thrd(&func_lane_detect);
+
+	//----------------------打开串口------------------
+	int fd2,nread2,i2;
+	if(_SERIAL_OPEN)
+	{
+        //串口开启
+		if((fd2=open_port(fd2,1))<0)
+		{
+		    perror("Open USB Serial Port Error !");
+		}
+        //串口设置
+		if((i2=set_opt(fd2,115200,8,'N',1))<0)
+		{
+		    perror("USB Serial Port set_opt Error");
+		}
+        //若正常打开串口,则开启CAN报文传输线程
+		boost::thread thrd2(&can_transfer,fd2);
+  	}
+
+	boost::thread thrd3(&SSD_detect);
+
+	if(_VIDEO_STORE)
+	{
+		time_t timep;
+    struct tm* p;
+    char* str;
+    char dir_path[200];
+    char original_file[200];
+    //char detect_file[200];
+    timep=time(NULL);
+    p=localtime(&timep);	    
+    str=asctime(p); 
+    for(int i=0;str[i]!='\0';i++)
+    {
+			if(str[i]==' ')str[i]='_';
+			if(str[i]==':')str[i]='_';
+			if(str[i]=='\n')str[i]='\0';
+    }
+    sprintf(dir_path,"/media/ubuntu/288CA2138CA1DB96/data/%s",str);
+    mkdir(dir_path,00700);
+    sprintf(original_file,"%s/original.avi",dir_path);
+    originalVideo.open(original_file, CV_FOURCC('M','J','P','G'),20, Size(640,480));
+	}
+   
+    //视频存储
+/*  if(_DEBUG)
+	{
+    	//objectVideo.open("/media/ubuntu/8E11-1B30/output_object20171123.avi", CV_FOURCC('M','J','P','G'),30, Size(640,480));
+		//roadVideo.open("/media/ubuntu/8618832F18831D75/output_road.avi", CV_FOURCC('M','J','P','G'),20, Size(640,480));
+		originalVideo.open("/media/ubuntu/8E11-1B30/output_object20171123.avi", CV_FOURCC('M','J','P','G'),20, Size(640,480));
+    	if (!objectVideo.isOpened())
+    	{
+      		LOG(FATAL) << "Write video error !";
+      		return 0;
+    	}
+  	}*/
+  	while(true)
+  	{
+    	if(!img_temp.empty())
+    	{
+
+            if(_DEBUG)LOG(INFO)<< "The frame is " << framecount;
+      		//img = img_temp(crop_region).clone();
+            //目标检测与跟踪
+
+
+            //Obj_pool_temp.assign(detector.Obj_pool.begin(),detector.Obj_pool.end());
+            Obj_pool_temp = detector.Obj_pool;
+            FCW_label_temp = detector.FCW_label;
+            FCW_object_index_temp = detector.FCW_object_index;
+
+            Object_track();
+
+#ifdef relative_debug
+		    cout << "---------Obj_pool.size>" << detector.Obj_pool.size()<< "<---------"<< endl;
+#endif
+
+		    relative_frame_index ++;
+
+            //前向目标相对距离计算
+            relative_distance_compute(Obj_pool_temp);
+            //判别目标的位置,并绘制boundingbox,包含危险目标
+
+
+            CIPV_Judge_for_drawing(Obj_pool_temp,img_temp);
+
+
+            //前方危险目标相对速度计算
+            relative_speed_compute(Obj_pool_temp);
+
+            ostringstream s_temp;
+            s_temp << TargetRes[0].TargetRelSpeed;
+            cv::putText(img_temp, s_temp.str(),cv::Point(30,80), cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255),1,8);
+
+            //绘制车道线
+            draw_detected_lane(img_temp,final_lanes,framecount);
+		    if(_DEBUG)
+		    {
+			    imshow("Detected All", img_temp);
+			    waitKey(1);
+			   // objectVideo << img_temp;
+		    }
+
+  		    // raw data with hexadecimal
+  		    char object_buffer[8] = {0};
+ 		    int cnt1 = 0;
+  		    //string CLASSES[] = {"__background__", "bicycle", "bus", "car", "truck", "van", "motorbike", "person", "tricycle"};
+  		    for (cnt1 = 0;cnt1 < 5;cnt1++)
+  		    {
+	  		    object_buffer[0] = (TargetRes[cnt1].TargetVDist >> 7) & 0xff;
+	  		    object_buffer[1] = (TargetRes[cnt1].TargetVDist & 0x7f) << 1;
+	  		    object_buffer[2] = (TargetRes[cnt1].TargetHDist >> 3) & 0xff;
+	  		    object_buffer[3] = (TargetRes[cnt1].TargetHDist & 0x07) << 5;
+	  		    object_buffer[4] = TargetRes[cnt1].TypeofTarget << 4;
+	  		    object_buffer[5] = (TargetRes[cnt1].TargetRelSpeed >> 7) & 0xff;
+	  		    object_buffer[6] = (TargetRes[cnt1].TargetRelSpeed & 0x7f) << 1;
+	  		    object_buffer[7] = TargetRes[cnt1].Time2Crash<<2;
+			    //cout<<"VDist:"<<float(TargetRes[cnt1].TargetVDist)<<endl;
+			    //cout<<"HDist:"<<float(TargetRes[cnt1].TargetHDist)<<endl;
+			    //cout<<"the type of target"<<(int)TargetRes[cnt1].TypeofTarget<<endl;
+			    //buffer<<"[002]:"<<(int)TargetRes[0].TargetHDist<<endl;
+			    //cout<<endl;
+			
+	  		    for (int cnt = 0;cnt < 8;cnt++)
+	  		    {
+				    pTargetCanBuffer[cnt1][cnt + 2] = object_buffer[cnt];
+	  		    }
+
+  		    }
+            clear_targetbuf();
+            DETECT_FLAG = true;
+
+
+			img_temp.~Mat();
+       //     cout<<"lll"<<endl;
+
+		}
+		if(OVER==true)
+		{
+			break;
+            close(fd2);
+		}
+	}
+	return 0;
+}
+
+
+
+
+
+

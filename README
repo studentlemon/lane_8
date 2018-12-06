@@ -1,0 +1,12 @@
+1.can_serial.hpp   主要包含了can的端口设置、波特率设置等。
+2.Common.h 主要包含一些类型的更名，例如typedef  int INT8等，另外包含一些LDW预警的缺省，和世界坐标系下的宽度！！！！
+3.ffttools 主要包含一些图像预处理函数.
+4.fhog.hpp 涉及一些fhog特征提取内容，不过hpp内的函数并没有具体实现.
+5.kcftracker.cpp 主要涉及一些kcf跟踪，继承了虚基类track.h，也没有函数的实现.
+6.track.h 作为一个虚基类，没什么用.
+7.labdata.hpp 是一个矩阵，包含一些参数。
+8.land_detection.hpp 包含了逆透视图像中相邻两条车道线间距的像素约束范围，定义了ROI范围，丢失帧数的阈值，初始、筛选后的车道线集合的结构体（struct），存储映射至原始图像的车道线识别参数结果（back_lines），车道线检测核心函数：定义原图像和逆透视图像中的ROI，卡尔曼滤波设定，经过高斯横纵向滤波，随后canny提取边缘.分别进行初提取，后提取，按照灰度进行排序，选择最大灰度的图像进行。若不满足，取次之。出现偏差过大，就取历史值。
+9.measure.hpp表示盲区范围
+10.measure_distance.hpp 指的是纵向距离。包括计算纵向距离.
+11.lane.cpp为主程序,主要是对提取出的车道线进行距离计算。func_lane_detect在检测车道线的同时进行距离计算。  突变压线？  CCanLaneRes LaneRes？	
+12.

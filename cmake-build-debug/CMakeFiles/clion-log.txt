@@ -1,0 +1,1156 @@
+/home/jiaotong404/Desktop/clion-2017.3.4/bin/cmake/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/jiaotong404/lane_8
+-- The C compiler identification is GNU 5.4.0
+-- The CXX compiler identification is GNU 5.4.0
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Error at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:86 (include):
+  include could not find load file:
+
+    /home/jiaotong404/opencv-3.1.0/OpenCVModules.cmake
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:250 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:251 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:252 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /home/jiaotong404/opencv-3.1.0/OpenCVConfig.cmake:253 (get_target_property):
+  Policy CMP0045 is not set: Error on non-existent target in
+  get_target_property.  Run "cmake --help-policy CMP0045" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  get_target_property() called with non-existent target "opencv_world".
+Call Stack (most recent call first):
+  CMakeLists.txt:7 (FIND_PACKAGE)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Looking for pthread_create
+-- Looking for pthread_create - not found
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - found
+-- Found Threads: TRUE  
+-- Found CUDA: /usr/local/cuda-8.0 (found suitable exact version "8.0") 
+-- Configuring incomplete, errors occurred!
+See also "/home/jiaotong404/lane_8/cmake-build-debug/CMakeFiles/CMakeOutput.log".
+See also "/home/jiaotong404/lane_8/cmake-build-debug/CMakeFiles/CMakeError.log".
